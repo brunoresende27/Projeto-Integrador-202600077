@@ -11,27 +11,27 @@
             <div class="chatcontainer">
                 <div class="message-row-apresentar">
                     <div class="message-bubble">
-                        {% if msg_inicial %}
+                        {% if apresentar %}
                             <h2>Talos:</h2>
-                            {{ msg_inicial|safe }}
+                            {{ apresentar|safe }}
                         {% endif %}
                     </div>
                 </div>
 
                 <div class="message-row user">
                     <div class="message-bubble">
-                        {% if resultado_u %}
+                        {% if usuario %}
                             <h2>Usuario:</h2>
-                            {{ resultado_u|safe }}
+                            {{ usuario|safe }}
                         {% endif %}
                     </div>
                 </div>
 
                 <div class="message-row-system">
                     <div class="message-bubble">
-                        {% if resultado_s %}
+                        {% if sistema %}
                             <h2>Talos:</h2>
-                            {{ resultado_s|safe }}
+                            {{ sistema|safe }}
                         {% endif %}
                     </div>
                 </div>
