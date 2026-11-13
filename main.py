@@ -5,13 +5,14 @@ from google.genai import types
 import flask
 from flask import Flask, request, render_template, redirect, url_for, session, flash
 import psycopg2
+from datetime import datetime
 
 load_dotenv()
 
 connect = psycopg2.connect(
     host="127.0.0.1",
     port="5432",
-    database="",
+    database="projeto_integrador",
     user="postgres",
     password="postgres" 
 )
@@ -47,8 +48,11 @@ interaction = client.chats.create(
     )
 )
 
+
+
 @app.route("/cadastro", methods=["GET", "POST"])
 def cadastro():
+    data_atual = datetime.now().strftime("%d/%m/%Y")
     if request.method == "POST":
         email = request.form.get("email","").strip().lower()
         senha = request.form.get("senha","")
@@ -67,7 +71,7 @@ def cadastro():
             cursor.execute("SELECT id_usu,email_usu FROM loggin WHERE email_usu = %s", (email,))
             cadastrar = cursor.fetchone()
             if not cadastrar:
-                cursor.execute("INSERT INTO loggin (email_usu,senha_usu) VALUES (%s,%s) RETURNING id_usu", (email,senha))
+                cursor.execute("INSERT INTO loggin (email_usu,senha_usu,data_criacao) VALUES (%s,%s,%s) RETURNING id_usu", (email,senha,data_atual))
                 connect.commit()
 
         except Exception as erro:
