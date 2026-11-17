@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+    <head>
+        <meta charset="UTF-8">
+        <title>ChatBot</title>
+        <link rel="stylesheet" href="../static/css/style.css">
+    </head>
+    <body>
+        <h2>login</h2>
+        {% with mensagens = get_flashed_messages() %}
+            {% if mensagens %}
+                {% for mensagem in mensagens %}
+                    <p>{{ mensagem }}</p>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <form action="{{ url_for('login') }}" method="POST">
+            <input
+                type="email"
+                id="email"
+                name="email"
+                placeholder="Digite seu E-mail"
+                required>
+
+            <input
+                type="password"
+                id="senha"
+                name="senha"
+                placeholder="Digite sua senha"
+                minlength="8"
+                required>
+
+            <button class="login" type="submit"> 
+                Logar na conta
+            </button>
+        </form>
+        <a href="/">
+            <button class="voltar" type="button">
+                ← Voltar
+            </button>
+        </a>
+    </body>
+</html>

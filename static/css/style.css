@@ -104,3 +104,39 @@ body {
     top: 70px;
     left: -350px;
 }
+
+.cadastro {
+    position: relative;
+    border: none;
+    width: 100px;
+    height: 30px;
+    background-color: #686868;
+    outline: none;
+    border-radius: 12px;
+    top: -750px;
+    left: 1800px;
+}
+
+.login {
+    position: relative;
+    border: none;
+    width: 100px;
+    height: 30px;
+    background-color: #686868;
+    outline: none;
+    border-radius: 12px;
+    top: -800px;
+    left: 1695px;
+}
+
+.voltar {
+    position: relative;
+    border: none;
+    width: 100px;
+    height: 30px;
+    background-color: #686868;
+    outline: none;
+    border-radius: 12px;
+    top: -60px;
+    left: 1800px;
+}
