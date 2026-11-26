@@ -15,7 +15,7 @@ app = flask.Flask(__name__)
 app.secret_key = "76073305bdf6f008cfe57b29c39b3b5ad3e1a88cecdaabc27d8d703d2b3a922b"
 
 connect = psycopg2.connect(
-    host="127.0.0.1",
+    host="172.17.18.109",
     port="5432",
     database="projeto_integrador",
     user="postgres",

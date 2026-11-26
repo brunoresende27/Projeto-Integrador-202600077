@@ -1,0 +1,111 @@
+
+
+body {
+    
+    font-family: Arial, Helvetica, sans-serif;
+    background: linear-gradient(135deg, #a0b1bd);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: 
+    height: 100vh;
+    margin:10px;
+}
+
+body {
+    background: url("../img/fundo\ cadastro.jpg") center center/cover no-repeat fixed;
+}
+
+
+h3 {
+    color: white;
+    font-size: 30px;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+
+
+p {
+    color: whitesmoke;
+    font-weight: bold;
+    text-align: center;
+}
+
+
+
+form {
+    background-color:#000000;
+    width: 280px;
+    padding: 30px;
+    border-radius: 20px;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
+
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+
+
+input[type="email"],
+input[type="password"] {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #a0b1bd;
+    border-radius: 150px;
+    font-size: 15px;
+    box-sizing: border-box;
+
+    transition: all 0.3s ease;
+}
+
+
+input[type="email"]:focus,
+input[type="password"]:focus {
+    outline: none;
+    border-color: #a0b1bd;
+    box-shadow: 0 0 8px rgba(0, 120, 215, 0.4);
+}
+
+
+
+.enviarcadastro {
+    background-color: #a0b1bd;
+    color: rgb(33, 9, 248);
+    border: none;
+    border-radius: 8px;
+    padding: 10px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+
+    transition: background-color 0.3s;
+}
+
+.enviarcadastro:hover {
+    background-color: #a0b1bd;
+}
+
+
+
+.voltar {
+    margin-top: 15px;
+
+    background-color: #e70b1d;
+    color: #0be0b2;
+
+    border: none;
+    border-radius: 8px;
+
+    padding: 10px 20px;
+    font-size: 15px;
+
+    cursor: pointer;
+
+    transition: background-color 0.3s;
+}
+
+.voltar:hover {
+    background-color: #a0b1bd;
+}
