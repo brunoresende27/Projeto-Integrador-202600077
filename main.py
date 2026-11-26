@@ -146,13 +146,13 @@ def cadastro():
 @app.route("/login", methods=["GET", "POST"])
 
 def login():
-    email = request.form.get("email", "").strip().lower()
-    senha = request.form.get("senha", "")
+    loginemail = request.form.get("loginemail", "").strip().lower()
+    loginsenha = request.form.get("loginsenha", "")
 
     try:
         cursor = connect.cursor()
 
-        cursor.execute("SELECT id_usu,email_usu,senha_usu FROM loggin WHERE email_usu = %s AND senha_usu = %s", (email,senha))
+        cursor.execute("SELECT id_usu,email_usu,senha_usu FROM loggin WHERE email_usu = %s AND senha_usu = %s", (loginemail,loginsenha))
 
         usuario = cursor.fetchone()
 
@@ -160,10 +160,13 @@ def login():
             session["id_usu"] = usuario [0]
             session["email"] = usuario [1]
 
+            flash("Login realizado com sucesso! Bem-vindo ao Talos.", "success")
+
             return redirect(url_for("/"))
         else:
             flash("Email ou senha incorretos")
     except Exception as erro:
+        connect.rollback()
         flash("Erro ao fazer login")
 
     return render_template("login.html")

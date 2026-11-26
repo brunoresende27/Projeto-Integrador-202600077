@@ -7,31 +7,32 @@
     </head>
     <body>
         <h2>login</h2>
-        {% with mensagens = get_flashed_messages() %}
+        {% with mensagens = get_flashed_messages(with_categories=true) %}
             {% if mensagens %}
-                {% for mensagem in mensagens %}
-                    <p>{{ mensagem }}</p>
+                {% for categoria, mensagem in mensagens %}
+                    <p class="{{ categoria }}">{{ mensagem }}</p>
                 {% endfor %}
             {% endif %}
         {% endwith %}
 
         <form action="{{ url_for('login') }}" method="POST">
+            <div class="quadradologin"></div>
             <input
                 type="email"
-                id="email"
-                name="email"
+                id="loginemail"
+                name="loginemail"
                 placeholder="Digite seu E-mail"
                 required>
 
             <input
                 type="password"
-                id="senha"
-                name="senha"
+                id="loginsenha"
+                name="loginsenha"
                 placeholder="Digite sua senha"
                 minlength="8"
                 required>
 
-            <button class="login" type="submit"> 
+            <button class="logar" type="submit"> 
                 Logar na conta
             </button>
         </form>
