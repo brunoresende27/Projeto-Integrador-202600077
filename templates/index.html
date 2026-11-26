@@ -17,51 +17,103 @@
                         {% endif %}
                     </div>
                 </div>
-
-                <div class="message-row user">
-                    <div class="message-bubble">
-                        {% if usuario %}
+                {% for proprietario, msg in mensagens %}
+                    {% if proprietario == "usuario" %}
+                    <div class="message-row user">
+                        <div class="message-bubble">
                             <h2>Usuario:</h2>
-                            {{ usuario|safe }}
-                        {% endif %}
+                            {{ msg }}
+                        </div>
                     </div>
-                </div>
-
-                <div class="message-row-system">
-                    <div class="message-bubble">
-                        {% if sistema %}
+                    {% elif proprietario == 'bot' %}
+                    <div class="message-row-system">
+                        <div class="message-bubble">
                             <h2>Talos:</h2>
-                            {{ sistema|safe }}
-                        {% endif %}
+                            {{ msg }}
+                        </div>
                     </div>
-                </div>
-
+                    {% endif %}
+                {% endfor %}
             </div>
         </form>
-        <form method="POST">
+        <form method="POST" action="{{ url_for('conversa') }}">
+            <input type="hidden" name="id_conversa" value="{{ conversa_ativa }}">
             <div class="chat">
-                <input
-                type="text"
-                name="chat"
-                placeholder="Escreva sua mensagem aqui."
-                />
+                <textarea name="chat" placeholder="Escreva sua mensagem aqui." rows="1" required></textarea>
                 <button class="botaoenviar" type="submit">
-                    <img src="../static/img/enviar.png" alt="enviar mensagem">
+                    <img src="{{ url_for('static', filename='img/enviar.png') }}" alt="Enviar">
                 </button>
             </div>
         </form>
         <div>
-            <a href="cadastro">
-                <button class="cadastro" type="button">
-                    Ainda não tenho uma conta
+            <a href="cadastro"><button class="cadastro" type="button">Ainda nao tenho uma conta</button></a>
+            <a href="login"><button class="login" type="button">Entrar na conta</button></a>
+            <form action="{{ url_for('logout') }}" method="POST">
+                <button type="submit">Sair Da conta</button>
+            </form>
+            <div class="chat-acoes">
+            <div class="historico-menu">
+                <button
+                class="abahistorico"
+                id="botaoHistorico"
+                type="button"
+                aria-expanded="false"
+                aria-controls="listaConversas">
+                Histórico
                 </button>
-            </a>
-            <a href="login">
-                <button class="login" type="button">
-                    Entrar na conta
-                </button>
-            </a>
+            </div>
+
+                <form action="{{ url_for('conversa') }}" method="POST">
+                    <input type="hidden" name="acao" value="nova_conversa">
+                    <button class="botao-chat-novo" type="submit">＋ Chat novo</button>
+                </form>
+            </div>
         </div>
         </main>
+        <div class="fundo-modal" id="fundoModal" hidden>
+            <section class="modal-historico" role="dialog" aria-modal="true"
+                    aria-labelledby="tituloHistorico">
+                <button id="fecharHistorico" class="fechar-modal"
+                        type="button" aria-label="Fechar">×</button>
+
+                <h2 id="tituloHistorico">Seus chats</h2>
+
+                {% for id_conversa, descricao in conversas %}
+                    <form action="{{ url_for('conversa') }}" method="GET">
+                        <button type="submit" name="id_conversa" value="{{ id_conversa }}">
+                            {{ descricao or 'Nova conversa' }}
+                        </button>
+                    </form>
+                {% else %}
+                    <p>Nenhuma conversa salva.</p>
+                {% endfor %}
+            </section>
+        </div>
+        <script>
+            const campoChat = document.querySelector('textarea[name="chat"]');
+            campoChat.addEventListener("keydown", function(event) {
+                if (event.key === "Enter" && !event.shiftKey) {
+                    event.preventDefault();
+                    this.form.requestSubmit();
+                }
+            });
+        </script>
+        <script>
+            const fundoModal = document.getElementById("fundoModal");
+
+            document.getElementById("botaoHistorico").addEventListener("click", () => {
+                fundoModal.hidden = false;
+            });
+
+            document.getElementById("fecharHistorico").addEventListener("click", () => {
+                fundoModal.hidden = true;
+            });
+
+            fundoModal.addEventListener("click", (event) => {
+                if (event.target === fundoModal) {
+                    fundoModal.hidden = true;
+                }
+            });
+        </script>
     </body>
 </html>
