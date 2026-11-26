@@ -14,11 +14,13 @@ app = flask.Flask(__name__)
 
 app.secret_key = "76073305bdf6f008cfe57b29c39b3b5ad3e1a88cecdaabc27d8d703d2b3a922b"
 
+
 def conectar():
     return psycopg2.connect(
         os.getenv("DATABASE_URL"),
         sslmode="require"
     )
+
 
 client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
