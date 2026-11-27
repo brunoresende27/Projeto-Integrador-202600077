@@ -71,8 +71,14 @@ def listar_conversas(cursor, id_usuario):
                END AS descricao
         FROM conversa AS c
         WHERE c.id_usu = %s
+          AND EXISTS (
+              SELECT 1
+              FROM mensagem AS m
+              WHERE m.id_conversa = c.id_conversa
+          )
         ORDER BY c.id_conversa DESC
     """, (id_usuario,))
+
     return cursor.fetchall()
 
 
@@ -83,99 +89,100 @@ def conversa():
 
     id_usuario = session["id_usu"]
     msg_inicial = "Olá! Sou o Talos. Como posso ajudar você hoje?"
+
     conn = None
     cursor = None
 
     try:
         conn = conectar()
         cursor = conn.cursor()
-        conversas = listar_conversas(cursor, id_usuario)
 
         if request.method == "POST" and request.form.get("acao") == "nova_conversa":
-            cursor.execute("""INSERT INTO conversa (id_usu, descricao)VALUES (%s, %s)RETURNING id_conversa""", (id_usuario, "Nova conversa"))
+            session.pop("conversa_ativa", None)
+            session["nova_conversa"] = True
 
-            novo_id = cursor.fetchone()[0]
-            conn.commit()
-
-            return redirect(url_for("conversa", id_conversa=novo_id))
-
-        conversas = listar_conversas(cursor, id_usuario)
-        id_solicitado = request.values.get("id_conversa")
-
-        if id_solicitado:
-            cursor.execute("""SELECT id_conversa FROM conversa WHERE id_conversa = %s AND id_usu = %s""", (id_solicitado, id_usuario))
-        else:
-            cursor.execute("""SELECT id_conversa FROM conversa WHERE id_usu = %s ORDER BY id_conversa DESC LIMIT 1""", (id_usuario,))
-
-        conversa = cursor.fetchone()
-        if conversa:
-            id_conversa = conversa[0]
-        elif id_solicitado:
-            flash("Conversa não encontrada.")
             return redirect(url_for("conversa"))
-        else:
-            cursor.execute("""INSERT INTO conversa (id_usu, descricao)VALUES (%s, %s)RETURNING id_conversa""", (id_usuario, "Nova conversa"))
-            id_conversa = cursor.fetchone()[0]
-            conn.commit()
-        if request.method == "POST":
-                texto_usuario = request.form.get("chat", "").strip()
 
-                if texto_usuario:
-                    cursor.execute("""
-                        SELECT proprietario, mensagens
-                        FROM mensagem
-                        WHERE id_conversa = %s
-                        ORDER BY id_msg ASC
-                    """, (id_conversa,))
+        id_solicitado = request.form.get("id_conversa") if request.method == "POST" else request.args.get("id_conversa")
 
-                    historico = [
-                        types.Content(
-                            role="user" if autor == "usuario" else "model",
-                            parts=[types.Part.from_text(text=texto)]
-                        )
-                        for autor, texto in cursor.fetchall()
-                    ]
+        if id_solicitado and request.form.get("chat") is None:
+            cursor.execute("""SELECT id_conversa FROM conversa WHERE id_conversa = %s AND id_usu = %s""", (id_solicitado, id_usuario))
 
-                    chat_atual = client.chats.create(
-                        model="gemini-flash-lite-latest",
-                        config=configuracao_chat,
-                        history=historico
+            resultado = cursor.fetchone()
+
+            if not resultado:
+                flash("Conversa não encontrada.")
+                return redirect(url_for("conversa"))
+
+            session["conversa_ativa"] = resultado[0]
+
+            return redirect(url_for("conversa"))
+
+        id_conversa = session.get("conversa_ativa")
+
+        if id_conversa:
+            cursor.execute("""SELECT id_conversa FROM conversa WHERE id_conversa = %s AND id_usu = %s""", (id_conversa, id_usuario))
+
+            resultado = cursor.fetchone()
+
+            if not resultado:
+                session.pop("conversa_ativa", None)
+                id_conversa = None
+
+        if not id_conversa:
+            id_conversa = None
+
+        if request.method == "POST" and request.form.get("chat") is not None:
+            texto_usuario = request.form.get("chat", "").strip()
+
+            if texto_usuario and not id_conversa:
+                cursor.execute("""INSERT INTO conversa (id_usu, descricao) VALUES (%s, %s) RETURNING id_conversa""", (id_usuario, "Nova conversa"))
+
+                id_conversa = cursor.fetchone()[0]
+
+                session["conversa_ativa"] = id_conversa
+                session.pop("nova_conversa", None)
+
+                historico = [
+                    types.Content(
+                        role="user" if autor == "usuario" else "model",
+                        parts=[types.Part.from_text(text=texto)]
                     )
+                    for autor, texto in cursor.fetchall()
+                ]
 
-                    resposta = chat_atual.send_message(texto_usuario)
-                    texto_bot = resposta.text or "Não consegui gerar uma resposta."
+                chat_atual = client.chats.create(
+                    model="gemini-flash-lite-latest",
+                    config=configuracao_chat,
+                    history=historico
+                )
 
-                    cursor.execute("""
-                        INSERT INTO mensagem (id_conversa, mensagens, proprietario)
-                        VALUES (%s, %s, %s)
-                    """, (id_conversa, texto_usuario, "usuario"))
+                resposta = chat_atual.send_message(texto_usuario)
+                texto_bot = resposta.text or "Não consegui gerar uma resposta."
 
-                    cursor.execute("""
-                        INSERT INTO mensagem (id_conversa, mensagens, proprietario)
-                        VALUES (%s, %s, %s)
-                    """, (id_conversa, texto_bot, "bot"))
+                cursor.execute("""INSERT INTO mensagem (id_conversa, mensagens, proprietario) VALUES (%s, %s, %s)""", (id_conversa, texto_usuario, "usuario"))
 
-                    titulo = texto_usuario.replace("\n", " ").strip()
-                    if len(titulo) > 45:
-                        titulo = titulo[:42].rstrip() + "..."
+                cursor.execute("""INSERT INTO mensagem (id_conversa, mensagens, proprietario) VALUES (%s, %s, %s)""", (id_conversa, texto_bot, "bot"))
 
-                    cursor.execute("""
-                        UPDATE conversa
-                        SET descricao = %s
-                        WHERE id_conversa = %s
-                        AND id_usu = %s
-                        AND descricao = %s
-                    """, (titulo, id_conversa, id_usuario, "Nova conversa"))
+                titulo = texto_usuario.replace("\n", " ").strip()
 
-                    conn.commit()
-                    return redirect(url_for("conversa", id_conversa=id_conversa))
+                if len(titulo) > 45:
+                    titulo = titulo[:42].rstrip() + "..."
 
-        cursor.execute("""
-            SELECT proprietario, mensagens
-            FROM mensagem
-            WHERE id_conversa = %s
-            ORDER BY id_msg ASC
-            """, (id_conversa,))
+                cursor.execute("""
+                    UPDATE conversa
+                    SET descricao = %s
+                    WHERE id_conversa = %s
+                      AND id_usu = %s
+                      AND descricao = %s
+                """, (titulo, id_conversa, id_usuario, "Nova conversa"))
+
+                conn.commit()
+
+                return redirect(url_for("conversa"))
+
+        cursor.execute("""SELECT proprietario, mensagens FROM mensagem WHERE id_conversa = %s ORDER BY id_msg ASC""", (id_conversa,))
+
         mensagens = cursor.fetchall()
 
         conversas = listar_conversas(cursor, id_usuario)
@@ -186,18 +193,21 @@ def conversa():
             mensagens=mensagens,
             conversas=conversas,
             conversa_ativa=id_conversa
-            )
+        )
 
     except Exception:
         app.logger.exception("Falha ao carregar ou enviar mensagem")
+
         if conn is not None:
             conn.rollback()
+
         flash("Ocorreu um erro ao carregar ou enviar a mensagem.")
         return redirect(url_for("conversa"))
 
     finally:
         if cursor is not None:
-                cursor.close()
+            cursor.close()
+
         if conn is not None:
             conn.close()
 
@@ -209,11 +219,11 @@ def cadastro():
         senha = request.form.get("senha","")
 
         if not email or not senha:
-            flash("Preencha todos os campos")
+            flash("Preencha todos os campos.", "error")
             return redirect(url_for("cadastro"))
 
         if len(senha) <8:
-            flash("Sua senha deve conter no minimo 8 caracteres")
+            flash("Sua senha deve conter no mínimo 8 caracteres.", "error")
             return redirect(url_for("cadastro"))
 
         conn = None
@@ -226,13 +236,13 @@ def cadastro():
             cursor.execute("SELECT id_usu,email_usu FROM loggin WHERE email_usu = %s", (email,))
             cadastrar = cursor.fetchone()
             if cadastrar:
-                flash("Este email ja esta cadastrado!")
+                flash("Este email já está cadastrado!", "error")
                 return redirect(url_for("cadastro"))
                 
             cursor.execute("INSERT INTO loggin (email_usu,senha_usu,data_criacao) VALUES (%s,%s,%s) RETURNING id_usu", (email,senha,data_atual))
 
             conn.commit()
-            flash("Cadastro realizado com sucesso!")
+            flash("Cadastro realizado com sucesso!", "success")
             return redirect(url_for("login"))
 
         except Exception as erro:

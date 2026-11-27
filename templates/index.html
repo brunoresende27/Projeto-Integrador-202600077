@@ -2,12 +2,61 @@
 <html lang="pt-BR">
     <head>
         <meta charset="UTF-8">
-        <title>ChatBot</title>
+        <link rel="icon" href="../static/img/icon.avif">
+        <title>Talos</title>
         <link rel="stylesheet" href="../static/css/style.css">
     </head>
     <body>
+        <div class="notificacoes">
+            {% with mensagens = get_flashed_messages(with_categories=true) %}
+                {% if mensagens %}
+                    {% for categoria, mensagem in mensagens %}
+                        <div class="notificacao {{ categoria }}">
+                            <span class="notificacao-texto">{{ mensagem }}</span>
+
+                            <button
+                                type="button"
+                                class="fechar-notificacao"
+                                aria-label="Fechar notificação">
+                                &times;
+                            </button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+        </div>
         <main>
-        <form action="http://127.0.0.1:5000" method="GET">
+            <div class="botoes-conta">
+                <a href="{{ url_for('cadastro') }}">
+                    <button class="cadastro" type="button">Criar conta</button>
+                </a>
+
+                <a href="{{ url_for('login') }}">
+                    <button class="login" type="button">Entrar na conta</button>
+                </a>
+                <form action="{{ url_for('logout') }}" method="POST">
+                    <button class="botao-sair" type="submit">
+                        Sair da sessão
+                    </button>
+                </form>
+            </div>
+            <div class="chat-acoes">
+                <div class="historico-menu">
+                    <button
+                    class="abahistorico"
+                    id="botaoHistorico"
+                    type="button"
+                    aria-expanded="false"
+                    aria-controls="listaConversas">
+                    Histórico
+                    </button>
+                </div>
+
+                    <form action="{{ url_for('conversa') }}" method="POST">
+                        <input type="hidden" name="acao" value="nova_conversa">
+                        <button class="botao-chat-novo" type="submit">＋ Chat novo</button>
+                    </form>
+            </div>
             <div class="chatcontainer">
                 <div class="message-row-apresentar">
                     <div class="message-bubble">
@@ -35,40 +84,15 @@
                     {% endif %}
                 {% endfor %}
             </div>
-        </form>
         <form method="POST" action="{{ url_for('conversa') }}">
             <input type="hidden" name="id_conversa" value="{{ conversa_ativa }}">
             <div class="chat">
                 <textarea name="chat" placeholder="Escreva sua mensagem aqui." rows="1" required></textarea>
                 <button class="botaoenviar" type="submit">
-                    <img src="{{ url_for('static', filename='img/enviar.png') }}" alt="Enviar">
+                    <img src="{{ url_for('static', filename='img/enviar.avif') }}" alt="Enviar">
                 </button>
             </div>
         </form>
-        <div>
-            <a href="cadastro"><button class="cadastro" type="button">Ainda nao tenho uma conta</button></a>
-            <a href="login"><button class="login" type="button">Entrar na conta</button></a>
-            <form action="{{ url_for('logout') }}" method="POST">
-                <button type="submit">Sair Da conta</button>
-            </form>
-            <div class="chat-acoes">
-            <div class="historico-menu">
-                <button
-                class="abahistorico"
-                id="botaoHistorico"
-                type="button"
-                aria-expanded="false"
-                aria-controls="listaConversas">
-                Histórico
-                </button>
-            </div>
-
-                <form action="{{ url_for('conversa') }}" method="POST">
-                    <input type="hidden" name="acao" value="nova_conversa">
-                    <button class="botao-chat-novo" type="submit">＋ Chat novo</button>
-                </form>
-            </div>
-        </div>
         </main>
         <div class="fundo-modal" id="fundoModal" hidden>
             <section class="modal-historico" role="dialog" aria-modal="true"
@@ -79,8 +103,9 @@
                 <h2 id="tituloHistorico">Seus chats</h2>
 
                 {% for id_conversa, descricao in conversas %}
-                    <form action="{{ url_for('conversa') }}" method="GET">
-                        <button type="submit" name="id_conversa" value="{{ id_conversa }}">
+                    <form action="{{ url_for('conversa') }}" method="POST">
+                        <input type="hidden" name="id_conversa" value="{{ id_conversa }}">
+                        <button type="submit">
                             {{ descricao or 'Nova conversa' }}
                         </button>
                     </form>
@@ -91,11 +116,50 @@
         </div>
         <script>
             const campoChat = document.querySelector('textarea[name="chat"]');
+            const formularioChat = campoChat.form;
+            const botaoEnviar = formularioChat.querySelector('.botaoenviar');
+
+            let envioLiberado = false;
+            let animando = false;
+
+            // Enter envia a mensagem
+            // Shift + Enter pula linha
             campoChat.addEventListener("keydown", function(event) {
                 if (event.key === "Enter" && !event.shiftKey) {
                     event.preventDefault();
-                    this.form.requestSubmit();
+                    formularioChat.requestSubmit();
                 }
+            });
+
+            formularioChat.addEventListener("submit", function(event) {
+
+                // Libera o envio real após a animação
+                if (envioLiberado) {
+                    return;
+                }
+
+                event.preventDefault();
+
+                // Evita iniciar animações repetidas
+                if (animando) {
+                    return;
+                }
+
+                animando = true;
+
+                botaoEnviar.classList.add("animando");
+
+                // Aguarda a animação terminar
+                setTimeout(function() {
+
+                    botaoEnviar.classList.remove("animando");
+
+                    animando = false;
+                    envioLiberado = true;
+
+                    formularioChat.requestSubmit();
+
+                }, 400);
             });
         </script>
         <script>
@@ -113,6 +177,30 @@
                 if (event.target === fundoModal) {
                     fundoModal.hidden = true;
                 }
+            });
+        </script>
+        <script>
+            document.querySelectorAll(".notificacao").forEach((notificacao) => {
+
+                function fecharNotificacao() {
+                    if (notificacao.classList.contains("saindo")) {
+                        return;
+                    }
+
+                    notificacao.classList.add("saindo");
+
+                    setTimeout(() => {
+                        notificacao.remove();
+                    }, 400);
+                }
+
+                const botaoFechar = notificacao.querySelector(".fechar-notificacao");
+
+                botaoFechar.addEventListener("click", fecharNotificacao);
+
+                // Desaparece automaticamente após 5 segundos
+                setTimeout(fecharNotificacao, 5000);
+
             });
         </script>
     </body>

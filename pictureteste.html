@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste de Renderização AVIF</title>
+</head>
+<body>
+
+    <h1>Teste de Renderização AVIF</h1>
+
+    <input type="file" id="arquivo" accept="image/*">
+
+    <p id="resultado">Selecione uma imagem.</p>
+
+    <picture>
+        <source id="fonte" type="image/avif">
+        <img id="imagem" alt="Imagem de teste" style="max-width: 500px;">
+    </picture>
+
+    <script>
+        const arquivo = document.getElementById("arquivo");
+        const fonte = document.getElementById("fonte");
+        const imagem = document.getElementById("imagem");
+        const resultado = document.getElementById("resultado");
+
+        arquivo.addEventListener("change", async () => {
+
+            const file = arquivo.files[0];
+
+            if (!file) return;
+
+            resultado.textContent = "Carregando imagem...";
+
+            const inicio = performance.now();
+
+            const url = URL.createObjectURL(file);
+
+            fonte.srcset = url;
+            imagem.src = url;
+
+            try {
+                await imagem.decode();
+
+                const fim = performance.now();
+
+                resultado.innerHTML = `
+                    <strong>Carregada com sucesso!</strong><br>
+                    Tempo: ${(fim - inicio).toFixed(2)} ms<br>
+                    Tamanho: ${(file.size / 1024).toFixed(2)} KB<br>
+                    Resolução: ${imagem.naturalWidth} x ${imagem.naturalHeight}<br>
+                    Formato: ${file.type || "Desconhecido"}
+                `;
+
+            } catch (erro) {
+                resultado.textContent = "Erro ao carregar ou decodificar a imagem.";
+            }
+        });
+    </script>
+
+</body>
+</html>
